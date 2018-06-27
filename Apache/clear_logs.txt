@@ -1,0 +1,22 @@
+#!/bin/bash
+#copy and clear logs
+
+FILES=`find /usr/local/apache/domlogs/ -type f|grep -v ftp. |grep -v bytes`
+
+rm -fv /home/pourhous/logs/*
+
+for i in $FILES
+        do cp -fv $i /home/pourhous/logs/
+        cat /dev/null > $i
+done
+
+# Chown files
+chown pourhous.pourhous /home/pourhous/logs/*
+
+# Gzip copied logs
+
+for x in /home/pourhous/logs/*
+        do gzip -f $x
+done
+
+echo "Logs copied and cleared."

@@ -1,0 +1,27 @@
+#!/bin/sh
+clear
+
+echo "Checking for Google, Yahoo and Microsoft Bot connections."
+echo ""
+echo ""
+
+netstat -tn 2>/dev/null | grep :80 | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | awk '{print $2}' | head >> crawlchk.1.tmp
+
+sed --in-place '/127.0.0.1/d' /root/crawlchk.1.tmp
+
+for file in $(cat /root/crawlchk.1.tmp); do host -WRs $file >> /root/crawlchk.2.tmp; done
+
+grep .googlebot.com /root/crawlchk.2.tmp >> /root/crawlchk.3.tmp
+
+grep .crawl.yahoo.net /root/crawlchk.2.tmp >> /root/crawlchk.3.tmp
+
+grep .search.msn.com /root/crawlchk.2.tmp >> /root/crawlchk.3.tmp
+
+results=$(wc -l /root/crawlchk.3.tmp |awk '{print $1}' )
+
+echo " $results crawler/s found connected to server."
+echo "----------------------------------------------"
+
+cat /root/crawlchk.3.tmp
+
+rm -rf /root/crawlchk.*
