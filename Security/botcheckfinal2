@@ -1,0 +1,53 @@
+#Botcheck
+#Checks for bot IPs within firewall
+#Created By: Mark Benedict
+#!/bin/bash
+rdns=$(grep 'LF_LOOKUPS = "1"' /etc/csf/csf.conf |awk '{ print $3 }'|sed "s/^\([\"']\)\(.*\)\1\$/\2/g")
+rdnsyes=1
+ver=v1.0
+if  ! [[ $verify == $rdnsyes ]] 
+then
+clear
+echo "Firewall Bot Check  $ver"
+echo ""
+echo "  ###########################################"
+echo " # Pro TIP -                                 #"
+echo " # Add the following to /etc/csf/csf.rignore #"
+echo " # to prevent further blocking:              #"
+echo " # .googlebot.com                            #"
+echo " # .crawl.yahoo.net                          #"
+echo " # .search.msn.com                           #"
+echo "  ##########################################"
+echo ""
+echo "CSF Detected with RDNS checking current entries."
+grep .googlebot.com /etc/csf/csf.deny >> /root/botcheckresults
+grep .crawl.yahoo.net /etc/csf/csf.deny >> /root/botcheckresults
+grep .search.msn.com /etc/csf/csf.deny >> /root/botcheckresults
+echo "___________________________________________"
+echo ""
+echo "Bots Found: `cat /root/botcheckresults |wc -l`"
+echo ""
+echo "Please report any issues to mbenedict@liquidweb.com"
+echo ""
+cat /root/botcheckresults
+
+else
+
+echo "Firewall Bot Check  $ver"
+echo ""
+echo "Please report any issues to mbenedict@liquidweb.com"
+echo ""
+grep -v '^[[:space:]]*#' /etc/csf/csf.deny >> /root/botcheck.tmp
+grep -v '^[[:space:]]*#' /etc/csf/csf.tempban >> /root/botcheck.tmp
+grep -v '^[[:space:]]*#' /etc/apf/deny_hosts.rules >> /root/botcheck.tmp
+sed --in-place '/(sshd)/d' /root/botcheck.tmp
+sed --in-place '/(smtpauth)/d' /root/botcheck.tmp
+sed --in-place '/(ftpd)/d' /root/botcheck.tmp
+sed --in-place '/(imapd)/d' /root/botcheck.tmp
+sed --in-place '/(cpanel)/d' /root/botcheck.tmp
+cat /root/botcheck.tmp |awk '{print $1}' >> /root/botcheck.tmp.2
+for file in $(cat /root/botcheck.tmp.2); do host -WRs $file >> /root/botcheck.results.tmp; done
+
+exit
+	
+fi

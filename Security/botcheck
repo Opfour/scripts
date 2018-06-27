@@ -1,0 +1,40 @@
+#Botcheck
+#Checks for bot IPs within firewall
+#Created By: Mark Benedict
+#!/bin/bash
+
+clear
+ver=v1.0
+echo "Firewall Bot Check  $ver"
+echo "Mark Benedict"
+echo ""
+echo "Please report any issues to mbenedict@liquidweb.com"
+echo ""
+verify=$(crontab -l|grep loadwatch)
+
+if  [ -z "$verify"  ] 
+then
+echo "CSF Detected"
+cat /etc/csf/csf.deny |awk '{print $1}' >> /root/botcheck.tmp
+cat /etc/csf/csf.tempban |awk '{print $1}' >> /root/botcheck.tmp
+echo "Parsing firewall entries for blocked bot IP's."
+echo "This may take awhile..."
+for file in $(cat botcheck.tmp); do host $file >> /root/botcheck.results.tmp; done
+rm -f /root/botcheck.tmp
+grep googlebot.com /root/botcheck.results.tmp >> /root/botcheck.results
+rm -f /root/botcheck.results.tmp
+clear
+echo "Firewall Bot Check Results $ver"
+echo "Mark Benedict"
+echo ""
+echo "Please report any issues to mbenedict@liquidweb.com"
+echo ""
+echo `wc -l botcheck.results |awk '{print $1}'` Bot/s Address/es Found.
+cat botcheck.results
+else
+
+echo "APF Detected"
+
+exit
+	
+fi

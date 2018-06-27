@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#Set some variables
+BACKUPDIR=/backup/mysql
+TIMESTAMP=`date +%m-%d-%y`
+PW='lwjeel99'
+TEMPDIR=/home/temp/mysqldump
+
+#Set the databases in an array, allows for much easier add/removes
+DBS="language_test purepff_1 pffchat_1 pffsupp_1 sallym_1"
+
+# 
+for db in ${DBS}
+  do
+    mysqldump --opt -c -e -Q ${db} -u root -p${PW} > ${TEMPDIR}/${db}-${TIMESTAMP}.sql
+done
+
+tar -C ${TEMPDIR} --remove-files -cvzf ${BACKUPDIR}/mysqlbackup-${TIMESTAMP}.tar.gz ./
+
+

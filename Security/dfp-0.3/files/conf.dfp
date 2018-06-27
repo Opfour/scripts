@@ -1,0 +1,24 @@
+# number of connections at which the ip will be banned
+threshold="150"
+
+# how long to ban the IP for
+bantime="600"
+
+# enable email alerts
+# 0 = off
+# 1 = instant alerts any time something occurs
+# 2 = summary every 6 hours of all bans in that time period if any
+
+alert="0"
+
+# email address to mail (either "root" or a full email address)
+email="root"
+
+# location of log file
+log="/var/log/dfp.log"
+
+# temporary location of ban letter
+alertletter="/tmp/alert.dfp"
+
+# time tracker for summary mails
+stime="/etc/dfp/smail.time"

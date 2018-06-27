@@ -1,0 +1,3 @@
+dfp (DoS Firewall Protection) was written as a replacement for DoS Deflate. The reasons for this are many but include DoS Deflate's whitelist capabilities not working, its lack of a log and its tendency to whitelist the server's own IP causing mysterious issues. This will be replacing DoS Deflate in our Server Secure package.
+dfp works as a cron job which, every minute, collects network activity and bans IPs with too many connections. This banning is accomplished through the use of APF. While it would be possible to integrate iptables without APF, this does not fit with the notion of having Server Secure standardized. After a period of time, these IPs are removed from the ban list to prevent slow down and overload from having too many banned IPs.
+[edit]

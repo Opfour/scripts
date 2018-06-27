@@ -1,0 +1,6 @@
+/var/log/dfp.log {
+  weekly
+  missingok
+  postrotate
+  endscript
+}

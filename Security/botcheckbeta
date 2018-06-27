@@ -1,0 +1,42 @@
+#Botcheck
+#Checks for bot IPs within firewall
+#Created By: Mark Benedict
+#!/bin/bash
+# Going to add a check to filter out non US IPs which should expedite the script when looking through apf and csf when reverse lookup doesnt work
+# Add detection to determine if server has csf installed and to first grep for google bot.
+clear
+ver=v1.0
+echo "Firewall Bot Check  $ver"
+echo "Mark Benedict"
+echo ""
+echo "Please report any issues to mbenedict@liquidweb.com"
+echo ""
+grep -v '^[[:space:]]*#' /etc/csf/csf.deny >> /root/botcheck.tmp
+grep -v '^[[:space:]]*#' /etc/csf/csf.tempban >> /root/botcheck.tmp
+sed --in-place '/(sshd)/d' /root/botcheck.tmp
+sed --in-place '/(smtpauth)/d' /root/botcheck.tmp
+sed --in-place '/(ftpd)/d' /root/botcheck.tmp
+sed --in-place '/(imapd)/d' /root/botcheck.tmp
+sed --in-place '/(cpanel)/d' /root/botcheck.tmp
+cat /root/botcheck.tmp |awk '{print $1}' >> /root/botcheck.tmp.2
+for file in $(cat /root/botcheck.tmp.2); do host -WRs $file >> /root/botcheck.results.tmp; done
+
+rm -rf /root/botcheck.tmp
+
+ipcount=$ (wc -l /root/botcheck.tmp |awk '{print $1})
+timecalc=$(expr $ipcount )
+
+echo "Parsing `wc -l /root/botcheck.tmp |awk '{print $1}'` firewall entries for blocked bot IP's."
+echo "This may take awhile..."
+for file in $(cat /root/botcheck.tmp); do host $file >> /root/botcheck.results.tmp; done
+rm -f /root/botcheck.tmp
+grep googlebot.com /root/botcheck.results.tmp >> /root/botcheck.results
+rm -f /root/botcheck.results.tmp
+clear
+echo "Firewall Bot Check Results $ver"
+echo "Mark Benedict"
+echo ""
+echo "Please report any issues to mbenedict@liquidweb.com"
+echo ""
+echo `wc -l /root/botcheck.results |awk '{print $1}'` Bot/s Address/es Found.
+cat /root/botcheck.results

@@ -1,0 +1,20 @@
+// This is a test to verify that php/mysql is working.  Can be used with any database.
+
+<?php
+
+$link = mysql_connect("localhost", "etraffic_test", "justtesting123");
+
+if (!$link) {
+   die('Could not connect: ' . mysql_error());
+}
+echo 'Connected successfully';
+
+mysql_select_db("etraffic_phpbb1",$db);
+
+$result = mysql_query("SELECT * FROM phpbb_posts_text",$db);
+
+while ($myrow = mysql_fetch_row($result)) {
+        printf("Post ID: %s<br/ >\n bbcode_uid: %s<br />\n Subject: %s<br />\n Text: %s <br />\n", $myrow[0], $myrow[1], $myrow[2], $myrow[3]);
+	}
+
+	?>

@@ -1,0 +1,11 @@
+#!/bin/bash
+qmess=$(exim -bpc)
+if [ $qmess > 0 ]
+then
+echo “High Mail Queue Detected” | mail -s “Queue-Watch” mbenedict@liquidweb.com
+	.
+else
+echo ""
+exit
+	.
+fi

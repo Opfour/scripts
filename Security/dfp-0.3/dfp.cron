@@ -1,0 +1,2 @@
+SHELL=/bin/bash
+*/1 * * * * root /usr/local/sbin/dfp > /dev/null 2>&1
