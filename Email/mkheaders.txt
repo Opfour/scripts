@@ -1,0 +1,45 @@
+#!/usr/bin/python
+
+import sys
+import md5
+import random
+
+if len(sys.argv) <= 1:
+	print "Please specify number of files.\n"
+	sys.exit(1)
+else:
+	fmax = int(sys.argv[1])
+
+spooldir = "./tmp/"
+
+f = open("subjects.txt", "r")
+subs = f.readlines()
+f.close()
+
+#f = open("froms.txt", "r")
+#froms = f.readlines()
+#f.close()
+
+#f = open("hosts.txt", "r")
+#hosts = f.readlines()
+#f.close()
+
+#f = open("tos.txt", "r")
+#tos = f.readlines()
+#f.close()
+
+# index for rand
+
+for i in range(fmax):
+	hash = md5.new()
+	hash.update(str(i))
+	name = hash.hexdigest()
+
+	fname = spooldir + "%s-H" %name
+
+	f = open(fname, 'w')
+	f.write("Subject: %s" %random.choice(subs))
+	f.write("From: president@whitehouse.gov\n")
+	f.write("To: wattersmt@gmail.com\n")
+	f.close()
+

@@ -1,0 +1,35 @@
+<?php
+//add From: header
+$headers = "From: wattersm@liquidweb.com\r\n";
+
+//specify MIME version 1.0
+$headers .= "MIME-Version: 1.0\r\n";
+
+//unique boundary
+$boundary = uniqid("HTMLDEMO");
+
+//tell e-mail client this e-mail contains//alternate versions
+$headers .= "Content-Type: multipart/alternative" .
+   "; boundary = $boundary\r\n\r\n";
+
+//message to people with clients who don't
+//understand MIME
+$headers .= "This is a MIME encoded message.\r\n\r\n";
+
+//plain text version of message
+$headers .= "--$boundary\r\n" .
+   "Content-Type: text/plain; charset=ISO-8859-1\r\n" .
+   "Content-Transfer-Encoding: base64\r\n\r\n";
+$headers .= chunk_split(base64_encode("This is the plain text version!"));
+
+//HTML
+version of message
+$headers .= "--$boundary\r\n" .
+   "Content-Type: text/html; charset=ISO-8859-1\r\n" .
+   "Content-Transfer-Encoding: base64\r\n\r\n";
+$headers .= chunk_split(base64_encode("This the <b>HTML</b> version!"));
+
+//send
+message
+mail("root@localhost", "An HTML Message", "", $headers);
+?> 

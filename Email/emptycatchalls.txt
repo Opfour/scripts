@@ -1,0 +1,55 @@
+#!/bin/sh
+
+mkdir -p /root/temp/bonafidepools.net /root/temp/broudys.com /root/temp/cheapvacationdiscountpackages.com \
+/root/temp/oijax.com /root/temp/mozerstudios.com
+
+mkdir /root/temp/valiases
+
+echo 
+echo "Backing up inboxes..."
+echo
+
+# Turn off cp interactive mode
+unalias cp
+unalias ls
+
+cp /home/bonafi/mail/inbox /root/temp/bonafidepools.net/
+cp /home/broudys/mail/inbox /root/temp/broudys.com/
+cp /home/bonnie/mail/inbox /root/temp/cheapvacationdiscountpackages.com/
+cp /home/mozer47/mail/inbox /root/temp/oijax.com/
+cp /home/mozerser/mail/inbox /root/temp/mozerstudios.com
+
+echo
+echo "Backing up valias files..."
+echo
+
+cp /etc/valiases/bonafidepools.net /root/temp/valiases/
+cp /etc/valiases/broudys.com /root/temp/valiases/
+cp /etc/valiases/cheapvacationdiscountpackages.com /root/temp/valiases/
+cp /etc/valiases/oijax.com /root/temp/valiases/
+cp /etc/valiases/mozerstudios.com /root/temp/valiases/
+
+echo
+echo "Setting default address to :fail:"
+echo
+
+for i in `ls /etc/valiases`; do perl -p -i -e 's/\*:.+/\*: :fail:/g' /etc/valiases/$i; done
+
+echo "Emptying catch-all inboxes..."
+
+# Cat /dev/null to default inbox file
+for i in `ls /home`; do cat /dev/null > /home/$i/mail/inbox; done
+
+echo
+echo "Restoring excluded domains."
+echo
+
+cp /root/temp/valiases/* /etc/valiases/
+
+cp /root/temp/bonafidepools.net/inbox /home/bonafi/mail/inbox
+cp /root/temp/broudys.com/inbox /home/broudys/mail/inbox
+cp /root/temp/cheapvacationdiscountpackages.com/inbox /home/bonnie/mail/inbox 
+cp /root/temp/oijax.com/inbox /home/mozer47/mail/inbox 
+cp /root/temp/mozerstudios.com/inbox /home/mozerser/mail/inbox 
+
+echo "Done."
