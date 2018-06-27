@@ -1,0 +1,29 @@
+##################################################################### ver 0.1.1
+	* added ps_cpu_stat and updated modules and templates
+	* updated disk_stat to work only for local filesystems
+
+####################################################################### ver 0.3
+	* fixed installer formatting bug
+	* changed check_running function to fix issues with watcher running more than once
+	* changed sar_stats time logic to correct and simplify
+	* added sar overview view (function, template data, etc)
+	* added apache_visitor_stats (function, template data, module hooks, etc)
+	* added apache_page_stats (function, template data, module hooks, etc
+	* updated apache_site_stats to include POST data
+	* combined load and swap templates into one
+	* changed swap from flat value to percentage based
+	* added epoch date to variables.conf
+	* added report_interval
+	* split load_thresh into two variables (one for reporting and one for logging)
+	* integrated report_interval and dual load thresholds into load module
+	* integrated report_interval into swap module as well
+	* setup alternate mysql config option (/root/.watcher.my.cnf)
+	* changed df options for disk_stats
+	* added swap_check function to ensure swap was enabled before running swap_test
+	* added rlog function to allow for application logging to /var/log/watcher/watcher.log
+	* updated 'top' output to use mpstat for full cpu stats
+	* consolidated process listing and ps reporting
+	* added dmesg reporting
+
+##################################################################### ver 0.3.1
+	* pushed hotfix for dmesg reporting

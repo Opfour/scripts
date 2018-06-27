@@ -1,0 +1,361 @@
+# this file contains many internal functions
+
+################################################################################
+##                               Core Functions                               ##
+################################################################################
+
+function rlog(){
+	string="[`date +%Y%m%d_%H%M%S`] :: ($pid) :: $1"
+	echo "$string" >> $run_log
+	echo "$string"
+	# keep log size small
+	if [ "`wc -l $run_log | awk '{print $1}'`" -gt "30000" ]; then
+		sed -i -e "1d" $run_log
+	fi
+}
+
+function check_running(){
+	if [ -e "$lock_file" ]; then
+		old_pid=$(cat $lock_file)
+		if [ "`ps axo pid | grep "$old_pid" | grep -v grep`" ]; then
+			rlog "watcher :: still running (pid:$old_pid) :: exiting"
+			exit 1
+		else
+			rlog "watcher :: stale lock file (pid:$old_pid) :: removing"
+			rm -f $lock_file
+		fi
+	fi
+}
+
+function prep_init(){                                                                      
+  # check for log folder
+	if [ ! -d "$dir_logs" ]; then
+		mkdir $dir_logs
+	fi  
+	if [ ! -d "$dir_logs_apache" ]; then
+		mkdir $dir_logs_apache
+	fi
+	if [ ! -d "$dir_logs_disk" ]; then
+		mkdir $dir_logs_disk
+	fi  
+	if [ ! -d "$dir_logs_ps" ]; then
+		mkdir $dir_logs_ps
+	fi
+	if [ ! -d "$dir_logs_top" ]; then
+		mkdir $dir_logs_top
+	fi
+	if [ ! -d "$dir_logs_port" ]; then
+		mkdir $dir_logs_port
+	fi
+	if [ ! -d "$dir_logs_mysql" ]; then
+		mkdir $dir_logs_mysql
+	fi    
+	if [ ! -d "$dir_logs_dmesg" ]; then
+		mkdir $dir_logs_dmesg
+	fi
+	if [ ! -d "$dir_reports" ]; then
+		mkdir $dir_reports
+	fi
+} 
+
+function assign_pid(){                                                                     
+	echo "$pid" > $lock_file
+} 
+
+function cleanup(){
+	# this is going to contain things to run when closing
+	# clean close and also from ctrl-c trap
+	find ${dir_logs}/ -type f -mtime +${log_retention} -exec rm -f {} \;
+	rm -f $lock_file
+}
+
+function control_c(){
+	rlog " ** watcher :: caught trap :: exiting ** "
+	cleanup
+	exit 1 
+}
+
+
+
+
+
+################################################################################
+##                              Module Functions                              ##
+################################################################################
+
+# ps related functions
+function ps_vsz_stat(){
+	ps_file="${dir_logs_ps}/${date}_ps"
+	if [ -e "$ps_file" ]; then
+		rlog "    watcher :: $ps_file already exists :: skipping"
+	else
+		rlog "    watcher :: $ps_file being generated"
+		/bin/ps axu > $ps_file
+	fi
+
+	ps_vsz_stat_file="${dir_logs_ps}/${date}_ps_vsz"
+	if [ -e "$ps_vsz_stat_file" ]; then
+		rlog "    watcher :: $ps_vsz_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $ps_vsz_stat_file being generated"
+		# process list sorted by virtual memory
+		cat $ps_file | head -n 1 > $ps_vsz_stat_file
+		cat $ps_file | tail -n +2 | sort -nr -k5 -k6 >> $ps_vsz_stat_file
+	fi
+}
+
+function ps_rss_stat(){
+	ps_file="${dir_logs_ps}/${date}_ps"
+	if [ -e "$ps_file" ]; then
+		rlog "    watcher :: $ps_file already exists :: skipping"
+	else
+		rlog "    watcher :: $ps_file being generated"
+		/bin/ps axu > $ps_file
+	fi
+	
+	ps_rss_stat_file="${dir_logs_ps}/${date}_ps_rss"
+	if [ -e "$ps_rss_stat_file" ]; then
+		rlog "    watcher :: $ps_rss_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $ps_rss_stat_file being generated"
+		# process list sorted by virtual memory
+		cat $ps_file | head -n 1 > $ps_rss_stat_file
+		cat $ps_file | tail -n +2 | sort -nr -k6 -k5 >> $ps_rss_stat_file
+	fi
+}
+
+function ps_cpu_stat(){
+	ps_file="${dir_logs_ps}/${date}_ps"
+	if [ -e "$ps_file" ]; then
+		rlog "    watcher :: $ps_file already exists :: skipping"
+	else
+		rlog "    watcher :: $ps_file being generated"
+		/bin/ps axu > $ps_file
+	fi
+	
+	ps_cpu_stat_file="${dir_logs_ps}/${date}_ps_cpu"
+	if [ -e "$ps_cpu_stat_file" ]; then
+		rlog "    watcher :: $ps_cpu_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $ps_cpu_stat_file being generated"
+		# process list sorted by cpu
+		cat $ps_file | head -n 1 > $ps_cpu_stat_file
+		cat $ps_file | tail -n +2 | sort -nr -k3 -k5 >> $ps_cpu_stat_file
+	fi
+}
+
+
+# top related functions
+function top_stat(){
+	top_stat_file="${dir_logs_top}/${date}_top"
+	if [ -e "$top_stat_file" ]; then
+		rlog "    watcher :: $top_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $top_stat_file being generated"
+		# top output sorted by cpu (default)
+		top_out=$(/usr/bin/top -c -n 1 -b)
+		top_out_head_1=$(echo "$top_out" | head -n 2)
+		top_out_head_2=$(echo "$top_out" | tail -n +4 | head -n 4)
+		top_mpstat=$(mpstat -P ALL 1 1| tail -n +3 | grep Average | sed "s/^.\{13\}//")
+		top_out_body=$(echo "$top_out" | tail -n +8 | sort -rn -k9)
+
+		echo "$top_out_head_1" > $top_stat_file
+		echo "$top_mpstat" >> $top_stat_file
+		echo "$top_out_head_2" >> $top_stat_file
+		echo "$top_out_body" >> $top_stat_file
+	fi
+}
+
+# dmesg output
+function dmesg_stat(){
+	dmesg_stat_file="${dir_logs_dmesg}/${date}_dmesg"
+	if [ -e "$dmesg_stat_file" ]; then
+		rlog "    watcher :: $dmesg_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $dmesg_stat_file being generated"
+		dmesg | egrep -v "Firewall" | tail -n 20 > $dmesg_stat_file
+	fi
+}
+
+# port statistics for port 80
+function port_stat(){
+	port_stat_file="${dir_logs_port}/${date}_port"
+	if [ -e "$port_stat_file" ]; then
+		rlog "    watcher :: $port_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $port_stat_file being generated"
+		netstat -an | grep :80 | awk '{print $5}' | sed 's/::ffff://' | cut -d':' -f1 | sort | egrep -v "0.0.0.0|127.0.0.1" | uniq -c |sort -nr | head > $port_stat_file
+	fi
+}
+
+# mysql related functions
+function mysql_proc_stat(){
+	mysql_proc_stat_file="${dir_logs_mysql}/${date}_mysql_proc"
+	if [ -e "$mysql_proc_stat_file" ]; then
+		rlog "    watcher :: $mysql_proc_stat_file already exists :: skipping"
+	else
+		rlog "    watcher :: $mysql_proc_stat_file being generated"
+		if [ -e "$mysql_alt_config" ]; then
+			mysql --defaults-file=$mysql_alt_config -e "show processlist" > $mysql_proc_stat_file
+		else
+			mysqladmin proc stat > $mysql_proc_stat_file
+		fi
+	fi
+}
+
+function mysql_status(){
+	mysql_status_file="${dir_logs_mysql}/${date}_mysql_status"
+	if [ -e "$mysql_status_file" ]; then
+		rlog "    watcher :: $mysql_status_file already exists :: skipping"
+	else
+		rlog "    watcher :: $mysql_status_file being generated"
+		# count of how many threads each DB has
+		if [ -e "$mysql_alt_config" ];then
+			mysql --defaults-file=$mysql_alt_config -se "show process list" | awk '{print $2" "$3" "$4}' | egrep -v "NULL" | sort | uniq -c | sort -nr > $mysql_status_file
+		else
+			mysql -se "show processlist" | awk '{print $2" "$3" "$4}' | egrep -v "NULL" | sort | uniq -c | sort -nr > $mysql_status_file
+		fi
+	fi
+}
+
+# apache related functions
+function apache_status(){
+	apache_status_file="${dir_logs_apache}/${date}_apache_status"
+	if [ -e "$apache_status_file" ]; then
+		rlog "    watcher :: $apache_status_file already exists :: skipping"
+	else
+		rlog "    watcher :: $apache_status_file being generated"
+		# check if server has cPanel
+		if [ -d "/var/cpanel" ]; then
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/whm-server-status > $apache_status_file
+		else
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/server-status > $apache_status_file
+		fi
+	fi
+}
+
+function apache_site_stats(){
+	apache_site_stats_file="${dir_logs_apache}/${date}_apache_site_stats"
+	if [ -e "$apache_site_stats_file" ]; then
+		rlog "    watcher :: $apache_site_stats_file already exists :: skipping"
+	else
+		rlog "    watcher :: $apache_site_stats_file being generated"
+		# check if server has cPanel
+		if [ -d "/var/cpanel" ]; then
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/whm-server-status | egrep "GET|POST" | awk '{print $12}' | sort | uniq -c | sort -rn | head > $apache_site_stats_file
+		else
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/server-status | egrep "GET|POST" | awk '{print $12}' | sort | uniq -c | sort -rn | head > $apache_site_stats_file
+		fi
+	fi
+}
+
+function apache_visitor_stats(){
+	apache_visitor_stats_file="${dir_logs_apache}/${date}_apache_visitor_stats"
+	if [ -e "$apache_visitor_stats_file" ]; then
+		rlog "    watcher :: $apache_visitor_stats_file already exists :: skipping"
+	else
+		rlog "    watcher :: $apache_visitor_stats_file being generated"
+		# check if server has cPanel
+		if [ -d "/var/cpanel" ]; then
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/whm-server-status | egrep "GET|POST" | awk '{print $11}' | sort | uniq -c | sort -rn | head > $apache_visitor_stats_file
+		else
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/server-status | egrep "GET|POST" | awk '{print $11}' | sort | uniq -c | sort -rn | head > $apache_visitor_stats_file
+		fi
+	fi
+}
+
+function apache_page_stats(){
+	apache_page_stats_file="${dir_logs_apache}/${date}_apache_page_stats"
+	if [ -e "$apache_page_stats_file" ]; then
+		rlog "    watcher :: $apache_page_stats_file already exists :: skipping"
+	else
+		rlog "    watcher :: $apache_page_stats_file being generated"
+		# check if server has cPanel
+		if [ -d "/var/cpanel" ]; then
+ 			/usr/bin/lynx -dump -width 500  http://127.0.0.1/whm-server-status | egrep "GET|POST" | awk '{print $12"\t\t"$14}' | sort | uniq -c | sort -rn | head > $apache_page_stats_file
+		else
+			/usr/bin/lynx -dump -width 500  http://127.0.0.1/server-status | egrep "GET|POST" | awk '{print $12"\t\t"$14}' | sort | uniq -c | sort -rn | head > $apache_page_stats_file
+		fi
+	fi
+}
+
+function apache_stats(){
+	apache_stats_file="${dir_logs_apache}/${day}_apache_stats"
+	if [ ! -e "$apache_stats_file" ];	then
+		touch $apache_stats_file
+	fi
+	if [ "`tail $apache_stats_file -n 1 | grep $time`" ];	then
+		rlog "    watcher :: $apache_stats_file contains entry for $time :: skipping"
+	else
+		rlog "    watcher :: $apache_stats_file being updated for $time"
+		# fields are separated by ':', formatting is as follows:
+		#
+		# time : uptime : total accesses : total kbytes : cpuload : requests per second : bytes per second : bytes per request : busy workers : idle workers
+		# check if server has cPanel
+		if [ -d "/var/cpanel" ]; then
+			ap_status=$(/usr/bin/lynx -dump http://127.0.0.1/whm-server-status?auto)
+		else
+			ap_status=$(/usr/bin/lynx -dump http://127.0.0.1/server-status?auto)
+		fi
+		ap_accesses=$(echo "$ap_status" | grep Accesses | sed 's/^Total Accesses:\ //')
+		ap_kbytes=$(echo "$ap_status" |grep kBytes | sed 's/^Total kBytes:\ //')
+		ap_cpuload=$(echo "$ap_status" | grep CPULoad | sed 's/^CPULoad:\ //')
+		ap_uptime=$(echo "$ap_status" | grep Uptime | sed 's/^Uptime:\ //')
+		ap_reqpersec=$(echo "$ap_status" | grep ReqPerSec | sed 's/^ReqPerSec:\ //')
+		ap_bytepersec=$(echo "$ap_status" | grep BytesPerSec | sed 's/^BytesPerSec:\ //')
+		ap_byteperreq=$(echo "$ap_status" | grep BytesPerReq | sed 's/^BytesPerReq:\ //')
+		ap_busy=$(echo "$ap_status" | grep BusyWorkers | sed 's/^BusyWorkers:\ //')
+		ap_idle=$(echo "$ap_status" | grep IdleWorkers | sed 's/^IdleWorkers:\ //')
+		echo "$time:$ap_uptime:$ap_accesses:$ap_kbytes:$ap_cpuload:$ap_reqpersec:$ap_bytepersec:$ap_byteperreq:$ap_busy:$ap_idle" >> $apache_stats_file
+	fi
+}
+
+# sar related functions
+function sar_stats(){
+	rlog "    watcher :: sar statistics being generated"
+	sar_diff="200"
+	# calculate 2 hours less and reformat time to hh:mm:ss format
+	if [ "$time" -lt "$sar_diff" ]; then
+		sar_time="00:00:00"
+	else
+		sar_mark=$(echo "$time - $sar_diff" | bc)
+		sar_mark_len=$(echo -n "$sar_mark" | wc -c)
+
+		while [ "$sar_mark_len" -lt "4" ]
+		do
+			sar_mark="0$sar_mark"
+			sar_mark_len=$(echo -n "$sar_mark" | wc -c)
+		done
+		sar_time=$(echo "$sar_mark" | sed 's/..$/\:&\:00/')
+	fi
+
+	sar_ov=$(sar -s $sar_time)
+	sar_mem=$(sar -r -s $sar_time)
+	sar_load=$(sar -q -s $sar_time)
+	sar_block=$(sar -b -s $sar_time)
+}
+
+# disk related functions
+function disk_stat(){
+	disk_stats_file="${dir_logs_disk}/${date}_df"
+	OLDIFS=$IFS
+	IFS=$'\n'
+	df_output=$(df -lP | tail -n +2)
+
+	for line in $df_output
+	do
+		df_dev=$(echo $line | awk '{print $1}')
+		df_used=$(echo $line | awk '{print $3}')
+		df_total=$(echo $line | awk '{print $2}')
+		df_mount=$(echo $line | awk '{print "( "$6" ):"}')
+		df_percent=$(echo "scale=2; $df_used / $df_total * 100" | bc | cut -d'.' -f1)
+		
+		if [ "$df_percent" -gt "$disk_thresh" ]; then
+			printf "Usage HIGH on %-15s %15s%8s%%\n" $df_dev $df_mount $df_percent >> $disk_stats_file
+		fi
+	done
+
+	IFS=$OLDIFS
+}
+
+

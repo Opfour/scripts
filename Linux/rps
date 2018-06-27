@@ -1,0 +1,4 @@
+#!/bin/bash
+# rps - running program search
+ps aux | grep $@ | grep -v grep | grep -v ".bin/rps" | column -t
+

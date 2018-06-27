@@ -1,0 +1,12 @@
+#!/usr/bin/python
+
+import os
+
+f = open('list.txt', 'r')
+
+dirs = []
+for line in f:
+        dirs.append(line.rstrip())
+
+for dir in dirs:
+        os.system("ncftpget -u guest -p guest -R -v x.x.x.x '%s' ." %dir)

@@ -1,0 +1,56 @@
+#!/usr/bin/env python2.4
+
+print "Content-type: text/html\n\n"
+
+import cgi, string, sys, time, urllib
+import parser
+
+form = cgi.FieldStorage()
+
+xen_servers = ["72.52.149.196", "72.52.148.5"]
+hosts = {"72.52.149.196":"xentest5.liquidweb.com", "72.52.148.5":"xentest6.liquidweb.com"}
+
+print "<html>"
+print "<head>"
+print "<META HTTP-EQUIV='Refresh' CONTENT='90'>"
+print "<title>Mr. VPS</title>"
+print "<link type='text/css' rel='stylesheet' href='/style.css'>"
+print "</head>"
+
+print "<body>"
+
+print """
+<script language="JavaScript" type="text/javascript">
+/* Confirm server reboot. */
+function RebootServer(host, domain)
+{
+    if(confirm("Are you sure you want to reboot " + domain + "?"))
+	url = "/cgi-bin/reboot.py?action=reboot&host=" + host + "&domain=" + domain;
+	y = screen.width / 2
+	z = screen.height / 2
+	window.open (url,"rebootWindow","menubar=0,resizable=1,width=300,height=120,left=" + y + ",top=" +z +",screenX=0,screenY=100'");
+	window.focus()
+}
+</script>
+"""
+
+print "<table width='100%'>"
+print "<tr>"
+print "<td><img src='/logo3.png' border=0></td>"
+print "<td align='right'><h1>Xen Server Stats</h1></td>"
+print "</tr>"
+print "</table>"
+print "<div style='padding-left: 5px;'><img src='/red_pog.png' valign='absmiddle'>&nbsp; <a href='/provision.html'>Provisioning<a/></div>"
+print "<br>"
+
+for server in xen_servers:
+	try:
+		parser.read_feed(server, hosts)
+	except:
+		print "<p>Error reading XML feed on %s</p>\n" %server
+		continue
+
+print "<center>Page 1</center>"
+print "</body>"
+print "</html>"
+

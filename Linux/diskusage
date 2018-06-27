@@ -1,0 +1,33 @@
+#!/bin/bash
+#Disk Usage
+#Check Folder Sizes
+#Created By: Mark Benedict
+
+clear
+ver=v0.2
+echo "Disk Usage $ver"
+echo "Mark Benedict"
+echo ""
+echo ""
+echo "This can take awhile..."
+echo ""
+echo ""
+echo ""
+echo "Disks -"
+df -h
+echo ""
+echo ""
+echo ""
+echo "Backup Folders -"
+du -hc --max-depth=2 /backup |sort -hr |head -20
+echo ""
+echo ""
+echo ""
+echo "Home Folders -"
+du -hc --max-depth=1 /home |sort -hr |head -20
+echo ""
+echo ""
+echo ""
+echo "Var -"
+du -hc --max-depth=2 /var |sort -hr |head -20
+

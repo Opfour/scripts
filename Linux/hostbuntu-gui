@@ -1,0 +1,51 @@
+#!/bin/bash
+cmd=(dialog --separate-output --checklist "Select options:" 22 76 16)
+options=(1 "Option 1" off    # any option can be set to default to "on"
+         2 "Option 2" off
+         3 "Option 3" off
+         4 "Option 4" off)
+choices=$("${cmd[@]}" "${options[@]}" 2>&1 >/dev/tty)
+clear
+for choice in $choices
+do
+    case $choice in
+        1)
+echo "What domain would you like to create?"
+echo "Only enter domain.tld - example.com - No www."
+read domain
+verify=$(cat /etc/passwd | grep "/home" |cut -d: -f1|grep $domain)
+if [[ -z "$verify" ]]
+then
+useradd -g www-data -m $domain
+mkdir /home/$domain/public_html
+cp /etc/apache2/apache2.conf /etc/apache2/apache2.conf.`date +%Y_%m_%d_%H:%M`.bak
+echo "
+<VirtualHost *:80>
+DocumentRoot "/home/$domain/public_html"
+ServerName $domain
+ServerAlias $domain www.$domain 
+<Directory "/home/$domain/public_html">
+allow from all
+Options +Indexes
+</Directory>
+DirectoryIndex index.php index.html
+IndexOptions
+</VirtualHost>" >> /etc/apache2/apache2.conf
+/etc/init.d/apache2 restart
+.
+else
+echo "It appears that domain already exists."
+
+fi
+            ;;
+        2)
+            echo "Second Option"
+            ;;
+        3)
+            echo "Third Option"
+            ;;
+        4)
+            echo "Fourth Option"
+            ;;
+    esac
+done

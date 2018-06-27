@@ -1,0 +1,32 @@
+#!/bin/bash
+# ----------------------------------------------------------------------
+# Mike's handy server backup utility: nightly snapshots
+# ----------------------------------------------------------------------
+
+# unset PATH
+
+# ------------- system commands used by this script --------------------
+RSYNC=`which rsync`
+OPTS="-Ravz -e ssh --delete-after --exclude=.ssh/"
+
+# ------------- file locations -----------------------------------------
+
+FILE_SYSTEMS="/etc /root /var/lib/mysql /var/cpanel/users /usr/local/lp /home"
+REMOTE_HOST="backup16.liquidweb.com"
+REMOTE_USER=""
+MAIL_ADDR="wattersm@liquidweb.com"
+
+# ------------- the script itself --------------------------------------
+cat /dev/null > /tmp/rsync-errors.txt
+
+for x in $FILE_SYSTEMS;
+	do $RSYNC $OPTS $x $REMOTE_USER@$REMOTE_HOST:/home/$REMOTE_USER/nightly >> /var/log/rsync-raw-out.txt 2>> /tmp/rsync-errors.txt
+done
+
+if [ -s '/tmp/rsync-errors.txt' ]; then
+	mail -s "Backup Errors on $HOSTNAME" < /tmp/rsync-errors.txt $MAIL_ADDR
+else
+	echo "Backup successful, no errors reported." | mail -s "Nightly Backup Report for $HOSTNAME" $MAIL_ADDR
+fi
+
+echo Backup script finished.

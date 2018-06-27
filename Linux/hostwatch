@@ -1,0 +1,11 @@
+#!/bin/bash
+while true; do
+        if ! [ "`ping -c 1 googlebjb.com`" ]; then
+              echo "Shits Down Yo!"
+           
+        fi
+        if ! [ "`ping -c 1 google.com`" ]; then #if ping *still* exits nonzero...
+               echo "Shits up Yo!"
+               
+        fi check again in five minutes
+done

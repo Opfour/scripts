@@ -1,0 +1,13 @@
+# disk module
+
+function disk_test(){
+	disk_stat
+	if [ -e "$disk_stats_file" ]; then
+		rlog "  watcher :: disk usage over disk_thresh ($disk_thresh) percent :: alerting"
+    source ${dir_module_templates}/disk > ${dir_reports}/${date}_disk
+		cat ${dir_reports}/${date}_disk | mail -s "`hostname` :: DISK USAGE warning" $email
+		rlog "  watcher :: DISK USAGE warning email sent to $email"
+	fi
+}
+
+disk_test

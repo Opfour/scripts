@@ -1,0 +1,80 @@
+Overview
+
+watcher is a program designed to log systems statistics when certain criteria are met. It looks for certain triggers and when met, it creates logs and emails a report to a specified email address. It does *not* attempt to save the server in any sort of automated fashion. It simply records data for post-mortem analysis. Think of it as a sort of 'black box'.
+It was designed as a tool to be used by the Enterprise Team for troubleshooting and analysis.
+
+[edit] Structure
+
+[edit] /etc/watcher
+
+Description
+This is where the core of this program lives. The conf files as well as the functions, modules and templates.
+Of note:
+watcher.conf
+The main configuration file for the program.
+modules.conf
+The module configuration file which enables and disables what is monitored
+[edit] /var/log/watcher
+
+Description
+The system holds all of it's logs here. It retains logs up to log_retention days (set in watcher.conf). There are various sub-directories which hold logs related to specific services (ie: apache, mysql) as well as a directory named reports which holds the compiled reports that are emailed.
+
+[edit] Installation
+
+Installation is fairly straight forward and commented. Simply follow these steps:
+cd /usr/local/src
+wget scripts.ent.liquidweb.com/watcher-current.tar.gz
+tar -zxvf watcher-current.tar.gz
+cd watcher-*
+./installer.sh
+This will give you the following output:
+Installation Done
+
+Details:
+  Install Path:              /etc/watcher
+  Primary Config:            /etc/watcher/watcher.conf
+  Module Config:             /etc/watcher/modules.conf
+  Cron Job:                  /etc/cron.d/watcher
+
+Please be sure to adjust:
+ * Primary Config to contain Ticket and Account link as well as thresholds required
+ * Module Config to reflect what you wish to be monitored and reported
+
+As it notes, configuration is the next step.
+
+[edit] Configuration
+
+Both configuration files are fairly well commented however I will relay the information here as well.
+[edit] watcher.conf
+
+Variables:
+email : email address reports are sent to
+account_link : full url link to billing account (included in email report)
+load_thresh : if system load is greater than or equal to this value, a report is generated and emailed
+there is a commented out formula that can be used in lieu of a flat value
+load_ticket : ticket related to an ongoing load issue (if any) (included in email report)
+swap_thresh : if swap free is less than this number, a report is generated and emailed
+swap_ticket : ticket related to an ongoing swap issue (if any) (included in email report)
+disk_thresh : if disk usage is higher than this percentage on any partition, a report is generated and emailed
+log_retention : if logs are older than this value (in days) they will be removed
+[edit] modules.conf
+
+Variables:
+All variables in this file have a 1/0 (off/on) value
+load_monitor : enables monitoring load
+swap_monitor : enables monitoring swap
+disk_monitor : enables monitoring disk usage
+Notes:
+load and swap have some other, sub-variables associated with them. These are for more control of what is being reported. For instance, if the server does not have apache running, reporting of apache can be disabled by setting load_monitor_apache=0 (or swap_monitor_apache=0 if you are monitoring swap)
+
+[edit] Disabling
+
+The watcher reporting can be disabled by setting all service_monitor variables to 0. You do not need to disable the individual reporting services mentioned in the note above.
+
+[edit] Uninstalling
+
+Warning: Uninstalling removes all watcher related files including logs
+
+cd /usr/local/src/watcher-*
+./uninstaller.sh
+

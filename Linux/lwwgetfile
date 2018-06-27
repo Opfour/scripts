@@ -1,0 +1,25 @@
+#!/bin/bash
+FILE=loadwatch.`date +%F.%H.%M`
+DIR=/root/loadwatch
+#Load Threshold for doing a dump.
+THRESH=60
+
+LOAD=`cat /proc/loadavg | awk '{print $1}' | awk -F '.' '{print $1}'`
+
+echo `date +%F.%X` - Load: $LOAD >> $DIR/checklog
+
+if [ $LOAD -gt $THRESH ]
+then
+    	echo Loadwatch tripped, dumping info to $DIR/$FILE >> $DIR/checklog
+        echo `date +%F.%H.%M` > $DIR/$FILE
+        free -m >> $DIR/$FILE
+        uptime >> $DIR/$FILE
+        mysqladmin processlist stat >> $DIR/$FILE
+        /sbin/service httpd fullstatus >> $DIR/$FILE
+        netstat -tn 2>/dev/null | grep :80 | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -nr | head >> $DIR/$FILE
+        top -bcn1 >> $DIR/$FILE
+        ps auxf >> $DIR/$FILE
+        /usr/sbin/exiwhat >> $DIR/$FILE
+        #uncomment this if reseater.sh installed from https://wiki.int.liquidweb.com/articles/ResourceEaters
+        #/root/bin/reseaters.sh >> $DIR/$FILE
+fi

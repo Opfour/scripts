@@ -1,0 +1,57 @@
+# load module
+
+load_cur=$(cat /proc/loadavg | awk '{print $1}')
+
+function load_test(){
+	if [ "`echo "scale=2; $load_cur > $load_log_thresh" | bc`" -eq "1" ]; then
+		rlog "  watcher :: load_cur ($load_cur) > load_log_thresh ($load_log_thresh) :: logging"
+		load_alert
+		source ${dir_module_templates}/load_and_swap > ${dir_reports}/${date}_load
+		if [ "`echo "scale=2; $load_cur > $load_report_thresh" | bc`" -eq "1" ]; then
+			if [ ! -e "$notification_file" ]; then
+				touch $notification_file
+			fi
+			notification_mark=$(stat -c %Y $notification_file)
+			if [ "`echo $epoch_date - $notification_mark | bc`" -ge "$report_interval" -o "`echo $epoch_date - $notification_mark | bc`" -le "0" ]; then
+				rlog "  watcher :: load_cur ($load_cur) > load_report_thresh ($load_report_thresh) :: alerting"
+				cat ${dir_reports}/${date}_load | mail -s "`hostname` :: LOAD warning :: load_cur ($load_cur) > load_report_thresh ($load_report_thresh)" $email
+				rlog "    watcher :: LOAD warning email sent to $email"
+				touch $notification_file
+			else
+				rlog "  watcher :: load_cur ($load_cur) > load_report_thresh ($load_report_thresh) :: report_interval ($report_interval) not met :: no report"
+			fi
+		fi
+	else
+		rlog "  watcher :: load_cur ($load_cur) < load_log_thresh ($load_log_thresh)"
+	fi
+}
+
+function load_alert(){
+	if [ "$load_monitor_top" -eq "1" ]; then
+		top_stat
+	fi
+	if [ "$load_monitor_apache" -eq "1" ]; then
+		port_stat
+		apache_status
+		apache_site_stats
+		apache_visitor_stats
+		apache_page_stats
+	fi
+	if [ "$load_monitor_ps" -eq "1" ]; then
+		ps_vsz_stat
+		ps_rss_stat
+		ps_cpu_stat
+	fi
+	if [ "$load_monitor_mysql" -eq "1" ]; then
+		mysql_proc_stat
+		mysql_status
+	fi
+	if [ "$load_monitor_sar" -eq "1" ]; then
+		sar_stats
+	fi
+	if [ "$load_monitor_dmesg" -eq "1" ]; then
+		dmesg_stat
+	fi
+}
+
+load_test

@@ -1,0 +1,64 @@
+#!/bin/bash
+#Outputs MySQL processlist, top, apache status, free, and current load all on one screen. Resizes based on terminal size. Useful for manually monitoring a server that could act up.
+function checkmysql {
+	cmdmysql=`mysql --batch -e 'show processlist;' | grep -v "Id" | cut -f6,5,4,8 | sed -e 's/\t/ /g' | sort -nr --key=3 | sed -e 's/ /\|/' -e 's/ /\|/' -e 's/ /\|/' | awk -v termwidth="$termwidth" 'BEGIN {FS="|"}; {termwidth=termwidth - 39; query=$4; query=substr("'"${query}"'",1,termwidth) }; { printf "%-3s%-17s%7-s%-" termwidth "s%-1s",$3,$1,$2,$4,query; print ""; }' | sed '/^$/d' `
+	if [[ $cmdmysql != "" ]]
+	then
+		wcmysql=`echo "$cmdmysql" | wc -l`
+	else
+		wcmysql=0
+	fi
+	return
+}
+function checkapache {
+	if [ -d "/var/cpanel" ]
+	then
+		cmdapache=`httpd status 2>&1 | sed -n '/requests\/sec/,/Scoreboard/p' | sed 'N;$!P;$!D;$d' | grep "requests/sec" -A 999`
+	else
+		cmdapache=`lynx --dump http://localhost/server-status 2>&1 | sed -n '/requests\/sec/,/Scoreboard/p' | sed 'N;$!P;$!D;$d' | grep "requests/sec" -A 999`
+	fi
+	if [[ $cmdapache != "" ]]
+	then
+		wcapache=`echo "$cmdapache" | wc -l`
+	else
+		wcapache=0
+	fi
+	return
+}
+function calclines {
+	nline=`tput lines | awk '{print int(($1 - 14) / 3)}'`
+	aline=`echo $nline 3 | awk '{print $1 + $2}'`
+	if [ $nline -gt $wcmysql ]
+	then
+		nline=`echo $nline $wcmysql | awk '{print $1 * 2 - $2}'`
+	fi
+	return
+}
+function addseperator {
+	printf "%$(tput cols)s\n"|tr ' ' '='
+	return
+}
+
+termwidth=`tput cols`
+cat /proc/loadavg
+addseperator
+
+checkmysql
+checkapache
+calclines
+
+top -c -b -n 1 | grep -v "grep" | grep "PID" -A $nline
+addseperator
+
+free | grep -v "cache:"
+
+if [ $wcmysql -gt 0 ]
+then
+	addseperator
+	echo "$cmdmysql" | head -$nline
+fi
+if [ $wcapache -gt 0 ]
+then
+	addseperator
+	echo "$cmdapache" | head -$aline
+fi

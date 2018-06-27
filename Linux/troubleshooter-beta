@@ -1,0 +1,137 @@
+#!/bin/bash
+#By Mark Benedict
+#Version 0.1
+echo "Checking all the things. This may take a minute."
+
+csfinstalled=$(csf -v 2>/dev/null|awk '{print $1}'|tr -d ':' 2>/dev/null )
+apfinstalled=$(apf -v 2>/dev/null |head -1|awk '{print $1}' )
+whmipcheck=$(/scripts/ipcheck --verbose|head -1|awk '{print $2}'|tr -d ':')
+dffullcheck=$(df -h |LC_ALL=C fgrep 100% |awk '{print $5}'|tr -d '%'|head -1)
+dfifullcheck=$(df -i |LC_ALL=C fgrep 100% |awk '{print $5}'|tr -d '%'|head -1)
+smtpsyntax=$(LC_ALL=C fgrep -i "$(date +"%Y-%m-%d")" /var/log/exim_mainlog |LC_ALL=C fgrep -c "too many syntax")
+eburycheck=$(ls -lah /lib64/libkeyutils* |LC_ALL=C fgrep -v ">" |awk '{print $5}'|tr -d 'K|M'|awk '{s+=$1} END {print s}')
+
+function firewallcheck {
+               if [[ $apfinstalled == APF ]];
+                  then
+	          echo APF
+		elif [[ $csfinstalled == csf ]];
+                  then
+                  echo CSF
+		else	
+			echo -e "$(tput setaf 1) No Firewall Detected! $(tput sgr0)"
+		fi
+           }
+
+
+function ipcheck {
+               if [[ $whmipcheck == OK ]];
+                  then
+	          echo "No IP-related problems have been found."
+		else	
+			echo -e "$(tput setaf 1) Problems detected! Run "/scripts/ipcheck" for more info. $(tput sgr0)"
+		fi
+           }
+           
+function dfalert {
+               if [[ $dffullcheck -eq 100 ]];
+                  then
+	          echo -e "$(tput setaf 1) One or more partitions full! $(tput sgr0)"
+		else	
+		exit 0
+		fi
+           }
+          
+function dfialert {
+               if [[ $whmipcheck -eq 100 ]];
+                  then
+	          echo -e "$(tput setaf 1) Inodes on one or more partition full! $(tput sgr0)"
+		else	
+		exit 0
+		fi
+           }
+
+function smtpdosdetect {
+               if [[ $smtpsyntax -gt 50 ]];
+                  then
+	          echo -e "$(tput setaf 1) Possible SMTP DOS Attack! $(tput sgr0)"
+		else	
+		exit 0
+		fi
+           }
+           
+function eburydetect {
+               if [[ $eburycheck -gt 34 ]];
+                  then
+	          echo -e "$(tput setaf 1) Ebury Rootkit Detected! $(tput sgr0)"
+	          echo -e "$(tput setaf 1) Ebury Rootkit Detected! $(tput sgr0)"
+	          echo -e "$(tput setaf 1) Ebury Rootkit Detected! $(tput sgr0)"
+		else
+		echo
+		fi
+           }      
+
+
+
+clear
+echo "*****************************************"
+echo "* Server Summary 0.1 By: Mark Benedict *"
+echo "****************************************"
+eburydetect
+echo "**************"
+echo "* The Basics *"
+echo "**************"
+echo ""
+echo "OS Version:  `cat /etc/*release |head -1`"
+echo "Kernel Version: `uname -r`"
+echo "Cpanel Version: `/usr/local/cpanel/cpanel -V`"
+#echo "CPU/s Availible: `lscpu |grep "CPU(s):" |awk '{ print $2 }' |egrep -v '[a-z]|[A-Z]'`@`cat /proc/cpuinfo |grep "@" |awk -F '@' '{print $2}'` "
+echo "CPU/s Availible: `cat /proc/cpuinfo |grep "@" |awk -F '@' '{print $2}'|uniq -c` "
+echo "Total RAM (Not Usage): `free -m |sed -n '2p' |awk '{ print $2 }'`MB"
+echo
+echo
+echo "**************"
+echo "* Disk Stats *"
+echo "**************"
+echo "Semaphores (Used/Available): `lscpu |grep "CPU(s):" |awk '{ print $2 }' |egrep -v '[a-z]|[A-Z]'`/`sysctl -a |grep kernel.sem |awk '{print $4}'`"
+echo
+echo "Inode Utlization: `dfialert`"
+df -ih |LC_ALL=C fgrep -v Filesystem |awk '{print "Usage: " $5 "  Mount: " $6}'
+echo
+echo "Disk Utlization: `dfalert`"
+df -h |LC_ALL=C fgrep -v Filesystem |awk '{print "Usage: " $5 "  Mount: " $6}'
+echo
+echo "**************"
+echo "* Networking *"
+echo "**************"
+echo
+echo "Firewall: `firewallcheck`"
+echo
+echo "Top 5 IPs Connected to port 80"
+netstat -nut|awk '$4~/:80$/ {print $5}'|cut -f-1 -d:|sort|uniq -c|sort -rn|head -5
+echo
+echo "Hostname Check: `ipcheck`"
+echo 
+echo "Syn Connections: `netstat -nap | grep SYN -c`"
+echo
+# Update this to function to detect cent 5 and 6
+echo "IP_Conntrack Max: `sysctl net.nf_conntrack_max 2> /dev/null|awk '{print $3}'` ` cat /proc/sys/net/ipv4/ip_conntrack_max 2>/dev/null`- Used: `wc -l /proc/net/nf_conntrack 2> /dev/null|awk '{print $1}'` ` wc -l /proc/net/ip_conntrack 2> /dev/null|awk '{print $1}'`"
+
+echo
+echo "*********"
+echo "* Email *"
+echo "*********"
+echo
+echo "SMTP DOS: `LC_ALL=C fgrep "$(date +"%Y-%m-%d")" /var/log/exim_mainlog |LC_ALL=C fgrep -c "too many syntax"` `smtpdosdetect`"
+emailqueuecount=$(exim -bpc)
+		function emailqueuewarn {
+		               if [[ $eximqueuecount -gt 1000 ]];
+		                  then
+			          echo -e "$(tput setaf 1) Possible SPAM Issue! $(tput sgr0)"
+				else	
+				exit 0
+				fi
+		           }
+echo "Email Queue: $emailqueuecount "
+
+

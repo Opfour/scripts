@@ -1,0 +1,59 @@
+#!/bin/bash
+#
+# Watcher
+# Author : Benjamin Cathey
+# Date   : 20100730
+#
+# Description:
+#  The purpose of 'watcher' is to help admins determine when
+#  a system is in danger of crashing and also to keep a 
+#  running log of system statistics for investigating a crash
+#  post-event.
+#
+#
+# Modules:
+#  load - monitors system load
+#  swap - monitors swap usage
+#  disk - monitors disk space usage
+#  apache - monitors connection count (max clients)
+
+# capture PID of script
+pid=$$
+
+dir_main="/etc/watcher"
+
+# pull in system variables
+source ${dir_main}/internals/variables.conf
+source ${dir_main}/watcher.conf
+source ${dir_main}/modules.conf
+source ${dir_main}/internals/functions
+
+# set trap for cleanup
+trap control_c SIGINT SIGTERM SIGKILL
+
+# go
+check_running
+prep_init
+assign_pid
+
+# testing area
+
+#source ${dir_main}/modules/swap
+
+#
+
+modules="load swap disk"
+
+rlog "watcher :: $date"
+
+
+for module in $modules
+do
+	# check module status (from modules.conf)
+	if [ "$((${module}_monitor))" -eq "1" ]; then
+		rlog "watcher :: $module enabled :: testing"
+		source ${dir_main}/modules/$module
+	fi
+done
+cleanup
+
