@@ -1,0 +1,9 @@
+#! /bin/bash
+for i in `awk -F: '{print $2}' /etc/trueuserdomains`
+do
+tmp=`mkpasswd -s 0`
+/scripts/chpass $i $tmp
+echo "$i $tmp" >> newpasswds
+done
+/scripts/ftpupdate
+

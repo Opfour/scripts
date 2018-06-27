@@ -1,0 +1,45 @@
+Description
+
+Server hacked? Or just want to mass change cPanel user, FTP user, or email account passwords? Then this script will be useful for you on cPanel servers as it automates this process entirely.
+[edit] Installation
+
+/scripts/perlinstaller JSON
+wget -O /scripts/rndCpPw.pl http://layer3.liquidweb.com/scripts/rndCpPw.pl
+chmod +x /scripts/rndCpPw.pl
+[edit] Usage
+
+Randomizing cPanel Passwords:
+--cpuser all passwordLength --- Sets all cPanel accounts to random password equal in length to passwordLength specified.
+--cpuser cPanelAccount passwordLength --- Sets specified cPanel account to random password equal in length to passwordLength specified.
+Randomizing email passwords:
+--mailbox all passwordLength --- Randomize all email account passwords for all cPanel accounts to specified length.
+--mailbox cPanelAccount passwordLength --- Randomizes all email accounts under cPanelAccount to random password of specified length.
+--mailbox cPanelAccount passwordLength user@domain.com --- Randomizes user@domain.com to random password of specified length.
+Randomizing FTP passwords:
+--ftp all passwordLength --- Randomize all FTP account passwords for all cPanel accounts to specified length.
+--ftp cPanelAccount passwordLength --- Randomizes all FTP accounts under cPanelAccount to random password of specified length.
+[edit] Example Commands
+
+To randomize all cPanel account passwords to a 16 character password, you could do:
+/scripts/rndCpPw.pl --cpuser all 16
+To ranndomize just the lw cPanel account password to a 16 character password:
+/scripts/rndCpPw.pl --cpuser lw 16
+To randomize all email account passwords to a 16 character password for all cPanel accounts:
+/scripts/rndCpPw.pl --mailbox all 16
+To randomize just the lw cPanel account email accounts to a 16 character password:
+/scripts/rndCpPw.pl --mailbox lw 16
+To randomize just user@lw.com password under the lw cPanel account:
+/scripts/rndCpPw.pl --mailbox lw 16 user@lw.com
+This feature was made so you could randomize all user@domain.com email accounts only for a specific use case. It was wrapped in this bash loop:
+for user in `ls -A /var/cpanel/users`; do domain=$(grep "DNS=" /var/cpanel/users/$user |cut -d "=" -f 2) && /scripts/rndCpPw.pl --mailbox $user 16 user@$domain; done
+To randomize all FTP account passwords to a 16 character password for all cPanel accounts:
+/scripts/rndCpPw.pl --ftp all 16
+To randomize just the lw cPanel account FTP accounts to a 16 character password:
+/scripts/rndCpPw.pl --ftp lw 16
+[edit] Known Issues
+
+There are currently no known issues.
+[edit] Feature Requests/Bug Reports
+
+Please send feature requests and bug reports to ssullivan@liquidweb.com
+

@@ -1,0 +1,53 @@
+#Auto EA v0.1
+#Automatically Backup EasyApache, and run an auto exiting screen session.
+#Created By: Mark Benedict
+#!/bin/bash
+
+clear
+echo "Auto EA - v0.1"
+echo "By: Mark Benedict"
+echo "------------------------------------------"
+echo "Server Name - `hostname`"
+echo "Server Time - `date`"
+echo "------------------------------------------"
+echo ""
+echo ""
+echo "Please enter your name (First Initial, Last Name) No SPACES -"
+read USR
+echo ""
+echo ""
+echo "Backing up current Apache Config"
+$(date +%s); FILE=/root/preEA.$USR;cp /usr/local/apache/conf/httpd.conf{,.bak.$USR}; cp /usr/local/lib/php.ini{,.bak.$USR}; touch $FILE; cat > $FILE <(echo -e "\n--Current Handler--\n" ; /usr/local/cpanel/bin/rebuild_phpconf --current ; if [ -x /usr/bin/php4 ] ;then echo -e "\n--PHP 4 Version--\n" ; php4 -v 2>&1;  echo -e "\n--PHP 4 Modules--\n"; php4 -m 2>&1 ;fi;if [ -x /usr/bin/php5 ] ;then echo -e "\n--PHP 5 Version--\n";  php5 -v ; echo -e "\n--PHP 5 Modules--\n"; php5 -m;fi ;echo -e "\n--Apache Version--\n" ;/usr/local/apache/bin/httpd -V;  echo -e "\n--Apache Modules--\n";/usr/local/apache/bin/httpd -l ; echo -e "\n\n--Date Created: $(date +%c)--";echo -e "\n--Configuration files--\n" ; echo "httpd.conf: /usr/local/apache/conf/httpd.conf.bak.$USR"; echo "php.ini: /usr/local/lib/php.ini.bak.$USR";) ; echo -e "\nPreEA configuration stored in \n$FILE"
+echo "Backup Stored in /root/preEA.$USR"
+echo "Starting Screen ea"
+echo "You can reattach using the command - screen -r ea"
+echo "Pre EA Configuration"
+echo ""
+echo ""
+echo "Apache Details -"
+echo "Apache Version: `httpd -v |awk '{ print $3 }' |head -1`"
+echo ""
+echo "`httpd -l`"
+echo ""
+echo "Mysql Details -"
+echo "Mysql Version: `mysql -V |awk '{ print $5 }'`"
+echo ""
+echo "PHP Details -"
+echo "PHP Version: `php -v |grep "(built:" |awk '{ print $2 }'`"
+echo "PHP Handler: `/usr/local/cpanel/bin/rebuild_phpconf --current |grep "PHP5 SAPI:" |awk '{ print $3 }'`"
+echo "memory_limit: `php -i |grep memory_limit |awk '{ print $5 }'`"
+echo "upload_max_filesize: `php -i |grep upload_max_filesize |awk '{ print $5 }'`"
+echo ""
+echo "`php -m`"
+echo ""
+echo "Perl Details -"
+echo "Perl Version: `perl -v |grep "This is perl," |awk '{ print $4 }'`"
+echo ""
+echo "Python Details -"
+echo "`python --version` "
+
+
+screen -A -m -d -S ea /scripts/easyapache --skip-xen-broken-xm-check
+echo "15 Seconds to copy it all!"
+sleep 15
+screen -r ea

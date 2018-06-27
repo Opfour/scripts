@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+import commands,os,time
+
+curdate = time.strftime("%Y%m%d")
+
+# Just in case things blow up
+os.system("cp -Rp /var/named /var/named.backup")
+
+os.chdir("/var/named")
+files = commands.getoutput("ls *.db").split("\n")
+
+for file in files:
+	domain = file.rstrip('db')
+	record = "\n%s IN TXT \"v=spf1 a mx ~all\"" %domain
+	f = open(file, 'a')
+	f.write(record)
+	f.close()
+
+# Now we need to update the serial numbers
+for file in files:
+	cmd = "sed -i -e \"s/[0-9]\{10\}/%s/\" %s" %(curdate, file)
+	os.system(cmd)
+
+os.system("service named restart")
+
+print "Done!"
+

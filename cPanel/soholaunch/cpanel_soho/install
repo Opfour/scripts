@@ -1,0 +1,25 @@
+Soholaunch Installer for cPanel
+From Sohowiki
+Jump to: navigation, search
+[edit]
+Overview
+
+The Soholaunch Installer for cPanel allows the web host's end-customer (cPanel user) to install Soholaunch Pro Edition on his/her website(s). This will add a Soholaunch icon to cPanel that users click on to access the installer.
+[edit]
+Requirements
+
+    * Root ssh access to cPanel server
+    * Comfort with uploading and extracting .tgz/.tar files on your server via SSH command prompt. 
+
+[edit]
+Installation
+
+1) Download soho_cpan_install.zip.
+
+2) Extract soho_cpan_install.sh from soho_cpan_install.zip on your local computer.
+
+3) Login as root through SSH and upload soho_cpan_install.sh to any directory on your server.
+
+4) In the ssh command prompt type the following: sh soho_cpan_install.sh
+
+Done! 

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DATE=`date +%m_%d_%Y`
+
+cp -v /usr/local/apache/domlogs/bloomstoday.com /home/blstoday/www/logs/accesslog_bloomstoday.com_${DATE}
+gzip -9 /home/blstoday/www/logs/accesslog_bloomstoday.com_${DATE}
+chown blstoday.blstoday /home/blstoday/www/logs/accesslog_bloomstoday.com_${DATE}.gz
+cat /dev/null > /usr/local/apache/logs/access_log

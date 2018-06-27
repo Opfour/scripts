@@ -1,0 +1,23 @@
+Soholaunch WHM Admin Panel
+From Sohowiki
+Jump to: navigation, search
+Overview
+
+The Soholaunch WHM Admin Panel is where the web host can manage his Soholaunch installations.
+Requirements
+
+    * Root access to cPanel server
+    * Comfort with uploading and extracting .tgz/.tar files on your server via SSH command prompt. 
+
+Installation
+
+   1. Login as root through SSH.
+   2. cd /usr/local/cpanel/whostmgr/docroot/cgi
+   3. If there is not a cgi folder, create one.
+   4. wget update.securexfer.net/panel_files/soho-whm-v11.tar.gz
+   5. tar -xvzf soho-whm-v11.tar.gz
+   6. chown root.root *soholaunch*
+   7. chmod -R 755 *soholaunch*
+   8. rm soho-whm-v11.tar.gz 
+
+Done! The Soholaunch Menu will now appear in your WHM panel at the bottom of the left menu. 

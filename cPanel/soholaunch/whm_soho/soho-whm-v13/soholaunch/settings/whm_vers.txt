@@ -1,0 +1,1 @@
+v13;http://update.securexfer.net/panel_files/soho-whm-v13.tar.gz
