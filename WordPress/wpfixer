@@ -1,0 +1,30 @@
+#By Mark Benedict
+# 09/29/2012
+#Version 0.1
+clear
+echo "What "
+echo ""
+PS3='Please enter your choice: '
+echo ""
+options=("Security Firewall" "ModSecurity Control" "Explorer" "Mail Queues" "Mail Manage" "Quit")
+select opt in "${options[@]}"
+do
+    case $opt in
+        "Security Firewall")
+
+            ;;
+        "ModSecurity Control")
+
+            ;;
+        "Explorer")
+
+            ;;
+        "Mail Queues")
+
+            ;;
+        "Mail Manage")
+
+            ;;
+        *) echo invalid option;;
+    esac
+done

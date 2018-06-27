@@ -1,0 +1,166 @@
+#!/bin/bash
+# WPUTIL Version 1.0
+# Created by Mark Benedict - mark@markjb.com
+#
+# Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0)
+#
+# License - http://creativecommons.org/licenses/by-nc-sa/3.0/
+#
+# You are free:
+#
+#    to Share — to copy, distribute and transmit the work
+#    to Remix — to adapt the work
+#
+# Under the following conditions:
+#
+#    Attribution — You must attribute the work in the manner specified by the author or licensor (but not in any way that suggests that they endorse you or your use of the work).
+#
+#    Noncommercial — You may not use this work for commercial purposes.
+#
+#    Share Alike — If you alter, transform, or build upon this work, you may distribute the resulting work only under the same or similar license to this one.
+#
+##################################################################################################################################################################################
+#Declare Name
+wputil="Wordpress Utility 1.0"
+#Check Version - Also used to check if in a directory with wordpress installed.
+wpver=$(grep -si "wp_version = " wp-includes/version.php |tr -d  ';'|tr -d "'"|awk '{print $3}')
+
+
+clear
+
+if  [ -z "$wpver"  ]
+then
+
+echo $wputil
+echo "No Wordpress install found in current directory."
+echo "Change to the base directory of wordpress before running."
+
+else
+wpcurrver=$(curl -s http://wordpress.org/download/ |grep " (Version"|awk '{print $9}'|tr ')' ' ')
+wppath=$(pwd)
+wpdbname=$(grep -i "define('DB_NAME'," wp-config.php |awk '{print $2}' |tr -d ")|'|;")
+wpdbuser=$(grep -i "define('DB_USER'," wp-config.php |awk '{print $2}' |tr -d ")|'|;")
+wpdbpass=$(grep -i "define('DB_PASSWORD'," wp-config.php |awk '{print $2}' |tr -d ")|'|;")
+wpdbhost=$(grep -i "define('DB_HOST'," wp-config.php |awk '{print $2}' |tr -d ")|'|;")
+wpdbprefix=$(grep -i "table_prefix" wp-config.php |awk '{print $3}' |tr -d  ";|'")
+wpdebug=$(grep -i "define('WP_DEBUG'," wp-config.php |awk '{print $2}' |tr -d ")|'|;")
+wppluginct=$(ls -al wp-content/plugins |egrep -v "index.php" | tail -n +4 |wc -l)
+#cpmysqlroot=$(grep pass /root/.my.cnf |awk -F'"' '{print $2}')
+listactive2=$(mysql -u $wpdbuser -p${wpdbpass} -N $wpdbname -e "SELECT option_value FROM wp_options WHERE option_name = 'active_plugins';"|sed 's/;/\n/g'|tr '"' ' '|awk '{print $2}'|tr '/' ' '|awk '{print $1}'|sort|grep -v '^$')
+siteurl2=$(mysql -u $wpdbuser -p${wpdbpass} -N $wpdbname -e "SELECT option_value FROM wp_options WHERE option_name = 'siteurl';")
+homeurl2=$(mysql -u $wpdbuser -p${wpdbpass} -N $wpdbname -e "SELECT option_value FROM wp_options WHERE option_name = 'home';")
+template2=$(mysql -u $wpdbuser -p${wpdbpass} -N $wpdbname -e "SELECT option_value FROM wp_options WHERE option_name = 'template';")
+stylesheet2=$(mysql -u $wpdbuser -p${wpdbpass} -N $wpdbname -e "SELECT option_value FROM wp_options WHERE option_name = 'stylesheet';")
+adminusers2=$(mysql -u $wpdbuser -p${wpdbpass} -N $wpdbname -e "SELECT um.user_id AS ID, u.user_login FROM wp_users u, wp_usermeta um WHERE u.ID = um.user_id AND um.meta_key = 'wp_capabilities'  AND um.meta_value LIKE '%administrator%' ORDER BY um.user_id;"| awk '{print $2}')
+
+
+##Begin Functions 
+
+function listactiveplugins {
+mysql -N <<EOFMYSQL
+USE $wpdbname
+SELECT option_value FROM wp_options WHERE option_name = 'active_plugins';
+EOFMYSQL
+}
+
+function siteurl {
+mysql -N <<EOFMYSQL
+USE $wpdbname
+SELECT option_value FROM wp_options WHERE option_name = 'siteurl';
+EOFMYSQL
+}
+
+function homeurl {
+mysql -N <<EOFMYSQL
+USE $wpdbname
+SELECT option_value FROM wp_options WHERE option_name = 'home';
+EOFMYSQL
+}
+
+function template {
+mysql -N <<EOFMYSQL
+USE $wpdbname
+SELECT option_value FROM wp_options WHERE option_name = 'template';
+EOFMYSQL
+}
+
+function stylesheet {
+mysql -N <<EOFMYSQL
+USE $wpdbname
+SELECT option_value FROM wp_options WHERE option_name = 'stylesheet';
+EOFMYSQL
+}
+
+function adminusers {
+mysql -N <<EOFMYSQL
+USE $wpdbname
+SELECT um.user_id AS ID, u.user_login FROM wp_users u, wp_usermeta um WHERE u.ID = um.user_id AND um.meta_key = 'wp_capabilities'  AND um.meta_value LIKE '%administrator%' ORDER BY um.user_id;
+EOFMYSQL
+}
+
+
+function updatechk {
+               if [[ $wpcurrver=$wpver ]];
+                  then
+			echo Up To Date
+		else
+			echo -e "$(tput setaf 1) Version Outdated! Latest - $wpcurrver $(tput sgr0)"
+		fi
+           }
+
+
+
+echo ""
+echo $wputil
+echo ""
+echo "###############################"
+echo "# Wordpress Basic Information #"
+echo "###############################"
+echo ""
+echo "Wordpress Version - $wpver | Latest Available - $wpcurrver"
+echo "Siteurl - $siteurl2 "
+echo "Base Install - $homeurl2"
+echo "Template - $template2"
+echo "Stylesheet - $stylesheet2"
+echo "Debug Mode - $wpdebug"
+echo 
+echo "***********"
+echo "* DB Info *"
+echo "***********"
+echo "DB Name - $wpdbname"
+echo "DB User - $wpdbuser"
+echo "DB Pass - $wpdbpass"
+echo "DB Host - $wpdbhost"
+echo "DB Prefix - $wpdbprefix"
+echo ""
+echo ""
+echo "*************"
+echo "*Admin Users*"
+echo "*************"
+echo " $adminusers2 "
+echo 
+echo
+echo "################################"
+echo "# Active Wordpress Plugins     #"
+echo "################################"
+echo ""
+#echo "`listactiveplugins2 |sed 's/;/\n/g'|tr '"' ' '|awk '{print $2}'|tr '/' ' '|awk '{print $1}'|sort|grep -v '^$'`"
+echo "$listactive2"
+echo 
+echo
+
+fi
+
+#Add Temp Admin User
+
+#INSERT IGNORE INTO wp_users (id,user_login,user_pass,user_nicename,user_email,user_url,user_registered,user_activation_key,user_status,display_name) VALUES(9999,'lwsupport','3700b3149f0066971bca785d98ab4871','LW Support','support@liquidweb.com','','2010-01-01 00:00:00','',0,'LW Support');
+#INSERT IGNORE INTO wp_usermeta (user_id,meta_key,meta_value) VALUES(9999,'wp_capabilities','a:1:{s:13:"administrator";b:1;}');
+#INSERT IGNORE INTO wp_usermeta (user_id,meta_key,meta_value) VALUES(9999,'wp_user_level',10);
+
+#Remove Temp User
+
+#DELETE FROM wp_users WHERE ID=9999;
+#DELETE FROM wp_usermeta WHERE user_id=9999;
+
+#Specify DB UandP
+#-u $wpdbuser -p${wpdbpass}

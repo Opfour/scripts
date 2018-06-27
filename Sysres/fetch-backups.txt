@@ -1,0 +1,72 @@
+
+fetch-backups Small backup fetching utility.
+ 
+https://git.sysres.liquidweb.com/lrumler/fetch-backups.git
+ 
+How do fetch-backups?
+
+fetch-backups is a command-line utility designed to provide an easy method of fetching and transporting cPanel backups. The utility uses web calls to the cPanel API to generate backups and transfer them to remote hosts via either SCP or FTP. It is written in Go, has no external dependencies, and can be run from workstations and web servers alike.
+Currently, fetch-backups can run in two modes: single or reseller. In single mode, the utility assumes that it will be fetching one cPanel backup, and requires access information for that singular cPanel account. Please note, in single mode, sleep time is not used.
+In reseller mode, the utility assumes that it will be fetching backups for all of the cPanel users that the reseller owns. It will first make one API request to fetch a list of all the users that the reseller owns and will then send requests to fetch backups for all of those accounts, spaced out by a sleep time.
+Installation:
+
+fetch-backups lives at https://files.sysres.liquidweb.com/fetch-backups/fetch-backups. Since it has no external dependencies, it's quite easy to deploy on workstations and servers alike -- just download and make it executable. I'd probably recommend using a one-liner like this:
+tbg@nimbus ~ $ mkdir -p ~/bin; wget --no-check-certificate https://files.sysres.liquidweb.com/fetch-backups/fetch-backups -O ~/bin/fetch-backups && chmod +x ~/bin/fetch-backups
+Usage:
+
+Once installed, fetch-backups can be called via the command line. If more than one backup is being fetched, it should be started in a screen session to prevent interruption of the utility, which would result in incomplete backup sets.
+When called without arguments, fetch-backups will prompt you for all of the information it needs to proceed. Input validation is intentionally minimal to account for the wide variety of acceptable values, so as long as there is some kind of input, the utility will send at least one request.
+Here's a non-functioning example of what that might look like:
+
+tbg@nimbus ~ $ fetch-backups
+Level of access (single|reseller): single
+Source IP: 127.0.0.1
+Source User: remoteuser
+Source Pass: remotepass
+Target IP: 10.0.0.1
+Target User: lwuser
+Target Pass: lwpass
+Transport Protocol (scp|ftp): scp
+Target Port: 22
+Target Directory: /home/lwuser
+Email (for notifications): youremail@liquidweb.com
+
+If you don't like prompts, you can also utilize flags to set these values. The authoritative list of available flags can be found with fetch-backups --help or fetch-backups -h, but here's the current list:
+
+tbg@nimbus ~ $ fetch-backups -h
+Usage of fetch-backups:
+    -access string
+        level of access (single|reseller)
+    -email string
+        email address (for notifications)
+    -proto string
+        transport protocol
+    -sip string
+        source ip address
+    -sleep int
+        sleep time between requests (default 60)
+    -spass string
+        source password
+    -suser string
+        source username
+    -tdir string
+        target directory
+    -tip string
+        target ip address
+    -tpass string
+        target password
+    -tport string
+        target port
+    -tuser string
+        target username
+        
+Using the flags, we can easily loop through a file full of source credentials, pushing backups to the same location on the target server. I will also reiterate here that in single mode, fetch-backups will not use its built-in sleep delay, so you'll make sure to set that in your loop:
+
+while read sip spass suser; do fetch-backups -access single -sip $sip -suser $suser -spass "$spass" -tip 10.0.0.1 -tuser lwuser -tpass lwpass -proto scp -tport 22 -tdir '/home/lwuser' -email 'youremail@liquidweb.com'; sleep 60; done < credfile.txt
+Known Issues:
+
+cPanel API calls aren't 100% reliable. This isn't entirely cPanel's fault, as remote hosts can either change or disable cPanel API functions at their leisure, but we shouldn't count on this utility functioning perfectly every time.
+Additionally, the utility uses two of the three available cPanel API's. The UAPI is relatively new, but it should be supported on cPanel versions 11.42+, which should encompass most shared hosts. If there are enough cases where the UAPI isn't supported, we can look in to falling back on cPanel API 2, which should be available in 11+.
+Unfortunately, there are no available functions outside of the deprecated cPanel API 1 that allow us to take backups. There's a feature request in, but no word from cPanel on it. If this changes at any time, the utility should be updated to make use of the new API calls. Until then...
+
+You have to run a EA after it is done reverting as well otherwise you will be missing a bunch of core files for EA3
