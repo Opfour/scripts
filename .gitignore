@@ -1,0 +1,14 @@
+.env
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+credentials.json
+token.pickle
+*.pyc
+__pycache__/
+.DS_Store
+*.swp
+*.swo
+*~
