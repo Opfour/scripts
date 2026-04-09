@@ -15,16 +15,21 @@ jobs:
     name: Lint & Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Pin actions to commit SHAs to prevent tag-hijack supply chain attacks
+      # (ref: astral.sh/blog/open-source-security-at-astral)
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
 
       - name: Install dependencies
         run: uv sync
 
+      # -- Ruff auto-fix pass --------------------------------------------------
+      # Fixes what it can (unused imports, sort order, simple lint issues)
+      # then formats. Changes are committed back to the PR branch.
       - name: Ruff lint (auto-fix)
         run: uv run ruff check --fix .
 
@@ -41,6 +46,8 @@ jobs:
             git push
           fi
 
+      # -- Strict check pass ----------------------------------------------------
+      # After fixes are applied, fail the build if anything unfixable remains.
       - name: Ruff lint (strict)
         run: uv run ruff check .
 
@@ -52,11 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-format
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.head_ref || github.ref }}
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
 
       - name: Install dependencies
         run: uv sync
@@ -72,11 +79,11 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.head_ref || github.ref }}
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
         with:
           python-version: ${{ matrix.python-version }}
 
